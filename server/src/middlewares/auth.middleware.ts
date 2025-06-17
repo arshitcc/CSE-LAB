@@ -15,7 +15,7 @@ const authenticateUser = asyncHandler(
       req.cookies?.accessToken ||
       req.headers.authorization?.replace("Bearer ", "");
 
-    if (!token.trim()) {
+    if (!token?.trim()) {
       return res
         .status(400)
         .json(new ApiResponse(401, false, "Unauthorized Token"));

@@ -25,13 +25,21 @@ export interface CustomRequest extends Request {
 
 export const AvailableUserRoles = Object.values(UserRoles);
 
-export const userIgnore = {
-  password: false,
-  refreshToken: false,
-  emailVerificationToken: false,
-  emailVerificationExpiry: false,
-  forgotPasswordToken: false,
-  forgotPasswordExpiry: false,
+export const userEssentialData = {
+  id: true,
+  fullname: true,
+  email: true,
+  username: true,
+  isEmailVerified: true,
+  loginType: true,
+  role: true,
+  avatar: true,
+  createdAt: true,
+  updatedAt: true,
+  createdProblems: true,
+  submissions: true,
+  playlists: true,
+  solvedProblems: true,
 };
 
 const userRegister = asyncHandler(async (req: Request, res: Response) => {
@@ -82,7 +90,7 @@ const userRegister = asyncHandler(async (req: Request, res: Response) => {
     where: {
       id: user.id,
     },
-    select: userIgnore,
+    select: userEssentialData,
   });
 
   if (!createdUser) {
@@ -102,11 +110,11 @@ const userRegister = asyncHandler(async (req: Request, res: Response) => {
 });
 
 const userLogin = asyncHandler(async (req: Request, res: Response) => {
-  const { username, email, password } = req.body;
+  const { user, password } = req.body;
 
   const existedUser = await db.user.findFirst({
     where: {
-      OR: [{ username }, { email }],
+      OR: [{ username: user }, { email: user }],
     },
   });
 
@@ -137,11 +145,10 @@ const userLogin = asyncHandler(async (req: Request, res: Response) => {
   const { accessToken, refreshToken } =
     generateAccessAndRefreshTokens(existedUser);
 
-  const user = await db.user.findUnique({
-    where: {
-      id: existedUser.id,
-    },
-    select: userIgnore,
+  const currentUser = await db.user.update({
+    where: { id: existedUser.id },
+    data: { refreshToken },
+    select: userEssentialData,
   });
 
   const options = {
@@ -154,7 +161,14 @@ const userLogin = asyncHandler(async (req: Request, res: Response) => {
     .status(200)
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
-    .json(new ApiResponse(200, true, "User Authenticated Successfully", user));
+    .json(
+      new ApiResponse(
+        200,
+        true,
+        "User Authenticated Successfully",
+        currentUser,
+      ),
+    );
 });
 
 const userLogout = asyncHandler(async (req: CustomRequest, res: Response) => {
@@ -182,7 +196,7 @@ const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(400, "Email verification token is missing");
   }
 
-  let hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+  let hashedToken = crypto.createHash("sha512").update(token).digest("hex");
 
   const user = await db.user.findFirst({
     where: {
@@ -346,7 +360,7 @@ const resetForgottenPassword = asyncHandler(
     const token = typeof req.query.token === "string" ? req.query.token : "";
     const { newPassword } = req.body;
 
-    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    const hashedToken = crypto.createHash("sha512").update(token).digest("hex");
     const user = await db.user.findFirst({
       where: {
         forgotPasswordToken: hashedToken,
@@ -467,7 +481,7 @@ const changeAvatar = asyncHandler(async (req: CustomRequest, res: Response) => {
         resource_type: avatar.resource_type,
       },
     },
-    select: userIgnore,
+    select: userEssentialData,
   });
 
   const { old_avatar_publicid } = req.body;

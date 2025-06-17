@@ -28,7 +28,7 @@ import {
 } from "../../../middlewares/auth.middleware";
 import { mongoIdPathVariableValidator } from "../../../validators/common/mongodb/mongodb.validators";
 import { UserRoles } from "../../../generated/prisma";
-
+import { upload } from "../../../middlewares/multer.middleware";
 
 const router = Router();
 
@@ -38,9 +38,7 @@ router.route("/login").post(userLoginValidation(), validate, userLogin);
 
 router.route("/logout").post(authenticateUser, userLogout);
 
-router
-  .route("/refresh-tokens")
-  .post(authenticateUser, updateRefreshAndAccessToken);
+router.route("/refresh-tokens").post(updateRefreshAndAccessToken);
 
 router.route("/verify").get(verifyEmail);
 
@@ -56,7 +54,9 @@ router
     resetForgottenPassword,
   );
 
-router.route("/profile/change-avatar").post(authenticateUser, changeAvatar);
+router
+  .route("/profile/change-avatar")
+  .post(authenticateUser, upload.single("avatar"), changeAvatar);
 
 router
   .route("/profile/resend-verification-email")
@@ -78,6 +78,7 @@ router
     verifyPermission([UserRoles.ADMIN]),
     mongoIdPathVariableValidator("userId"),
     userAssignRoleValidator(),
+    validate,
     assignRole,
   );
 

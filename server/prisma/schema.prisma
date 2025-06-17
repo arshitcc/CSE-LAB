@@ -78,12 +78,12 @@ model Problem {
   description        String
   difficulty         Difficulty
   tags               String[]
-  hints              String?
+  hints              String[]
   editorial          String?
   examples           Json[]
   attachments        Json[]
-  constraints        Json[]
-  testCases          TestCase[]
+  constraints        String[]
+  testCases          Json[]
   preCodeSnippets    Json[]
   referenceSolutions Json[]
   submissions        Submission[]
@@ -150,7 +150,7 @@ model TestCase {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  // problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
 
   @@unique([problemId, input])
 }
